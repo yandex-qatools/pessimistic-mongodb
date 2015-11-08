@@ -1,0 +1,60 @@
+package ru.qatools.mongodb;
+
+import org.junit.Test;
+import ru.qatools.mongodb.error.LockWaitTimeoutException;
+
+import java.io.Serializable;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
+/**
+ * @author Ilya Sadykov
+ */
+public class MongoPessimisticRepoTest extends MongoPessimisticLockingTest {
+
+    @Test
+    public void testRepoGetAndPut() throws Exception {
+        final PessimisticRepo<User> repo = createRepo();
+        repo.put("user", user("Vasya"));
+        final User user = repo.tryLockAndGet("user", 100);
+        final AtomicBoolean exceptionRaised = new AtomicBoolean();
+        final Thread thread = new Thread(() -> {
+            try {
+                repo.tryLockAndGet("user", 500L);
+            } catch (LockWaitTimeoutException e) {
+                exceptionRaised.set(true);
+            }
+        });
+        thread.start();
+        thread.join();
+        assertThat(exceptionRaised.get(), is(true));
+        user.lastName = "Vasilyev";
+        repo.putAndUnlock("user", user);
+        assertThat(repo.get("user").lastName, is("Vasilyev"));
+        assertThat(repo.keySet(), hasItem("user"));
+    }
+
+    @Test
+    public void testReturnsNullWhenNoData() throws Exception {
+        assertThat(createRepo().get("somekey"), nullValue());
+    }
+
+    protected MongoPessimisticRepo<User> createRepo() {
+        return new MongoPessimisticRepo<User>(createLocking());
+    }
+
+    protected User user(String firstName) {
+        final User res = new User();
+        res.firstName = firstName;
+        return res;
+    }
+
+    static class User implements Serializable {
+        String firstName = "Ivan";
+        String lastName = "Ivanov";
+    }
+}
