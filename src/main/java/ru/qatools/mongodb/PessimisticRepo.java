@@ -47,6 +47,11 @@ public interface PessimisticRepo<T extends Serializable> {
     Set<String> keySet();
 
     /**
+     * Returns values set
+     */
+    Set<T> valueSet();
+
+    /**
      * Returns internal lock
      */
     PessimisticLocking getLock();

@@ -17,10 +17,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Set;
 
+import static com.mongodb.client.model.Projections.include;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 import static ru.qatools.mongodb.util.SerializeUtil.deserializeFromBytes;
-import static ru.qatools.mongodb.util.SerializeUtil.serializeToBytes;
 
 /**
  * @author Ilya Sadykov
@@ -74,7 +74,7 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
             return null;
         }
         try {
-            return (T) SerializeUtil.deserializeFromBytes(((Binary) ((Document) res.iterator().next()).get("object")).getData());
+            return getObject((Document) res.iterator().next());
         } catch (ClassNotFoundException | IOException e) {
             throw new InternalRepositoryException("Failed to deserialize object from bson! ", e);
         }
@@ -82,8 +82,21 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
 
     @Override
     public Set<String> keySet() {
-        return stream(collection().find().spliterator(), false).map(
+        return stream(collection().find().projection(include("_id")).spliterator(), false).map(
                 d -> d.get("_id").toString()
+        ).collect(toSet());
+    }
+
+    @Override
+    public Set<T> valueSet() {
+        return stream(collection().find().projection(include("object")).spliterator(), false).map(
+                d -> {
+                    try {
+                        return getObject(d);
+                    } catch (ClassNotFoundException | IOException e) {
+                        throw new InternalRepositoryException("Failed to deserialize object from bson! ", e);
+                    }
+                }
         ).collect(toSet());
     }
 
@@ -104,5 +117,9 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
 
     private MongoCollection<Document> collection() {
         return lock.db().getCollection(lock.keySpace + COLL_SUFFIX);
+    }
+
+    private T getObject(Document doc) throws IOException, ClassNotFoundException {
+        return (T) deserializeFromBytes(((Binary) doc.get("object")).getData());
     }
 }
