@@ -5,6 +5,7 @@ import ru.qatools.mongodb.error.InvalidLockOwnerException;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -42,14 +43,19 @@ public interface PessimisticRepo<T extends Serializable> {
     T get(String key);
 
     /**
-     * Returns keys set
+     * Returns keys set of stored objects
      */
     Set<String> keySet();
 
     /**
-     * Returns values set
+     * Returns values set of stored objects
      */
     Set<T> valueSet();
+
+    /**
+     * Returns key-valued map of stored objects
+     */
+    Map<String, T> keyValueMap();
 
     /**
      * Returns internal lock

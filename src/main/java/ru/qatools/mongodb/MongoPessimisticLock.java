@@ -3,20 +3,27 @@ package ru.qatools.mongodb;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+
+import static java.util.UUID.randomUUID;
 
 /**
  * @author Ilya Sadykov
  */
 public class MongoPessimisticLock implements Lock {
     final PessimisticLocking lock;
-    final String uuid = UUID.randomUUID().toString();
+    final String uuid;
+
+
+    public MongoPessimisticLock(PessimisticLocking lock, String uuid) {
+        this.uuid = uuid;
+        this.lock = lock;
+    }
 
     public MongoPessimisticLock(PessimisticLocking lock) {
-        this.lock = lock;
+        this(lock, randomUUID().toString());
     }
 
     public boolean isLockedByCurrentThread(){

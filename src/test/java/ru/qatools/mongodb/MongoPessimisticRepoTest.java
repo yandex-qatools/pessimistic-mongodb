@@ -38,6 +38,7 @@ public class MongoPessimisticRepoTest extends MongoPessimisticLockingTest {
         assertThat(repo.get("user").lastName, is("Vasilyev"));
         assertThat(repo.keySet(), hasItem("user"));
         assertThat(repo.valueSet().stream().map(u -> u.firstName).collect(toSet()), hasItem(user.firstName));
+        assertThat(repo.keyValueMap().keySet(), hasItem("user"));
     }
 
     @Test
