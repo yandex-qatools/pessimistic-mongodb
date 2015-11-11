@@ -35,4 +35,17 @@ public class MongoPessimisticLockTest extends MongoPessimisticLockingTest {
         t.join(2000);
         assertThat(currentTimeMillis() - startedTime, greaterThanOrEqualTo(2000L));
     }
+
+    @Test
+    public void testLockAndWaitWithSameLockName() throws Exception {
+        final MongoPessimisticLocking locking = createLocking();
+        MongoPessimisticLock lock1 = new MongoPessimisticLock(locking, "lockname");
+        MongoPessimisticLock lock2 = new MongoPessimisticLock(locking, "lockname");
+        lock1.lock();
+        final Thread t = new Thread(lock2::lock);
+        t.start();
+        final long startedTime = currentTimeMillis();
+        t.join(2000);
+        assertThat(currentTimeMillis() - startedTime, greaterThanOrEqualTo(2000L));
+    }
 }

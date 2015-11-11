@@ -6,6 +6,7 @@ import ru.qatools.mongodb.error.LockWaitTimeoutException;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
@@ -36,6 +37,8 @@ public class MongoPessimisticRepoTest extends MongoPessimisticLockingTest {
         repo.putAndUnlock("user", user);
         assertThat(repo.get("user").lastName, is("Vasilyev"));
         assertThat(repo.keySet(), hasItem("user"));
+        assertThat(repo.valueSet().stream().map(u -> u.firstName).collect(toSet()), hasItem(user.firstName));
+        assertThat(repo.keyValueMap().keySet(), hasItem("user"));
     }
 
     @Test
