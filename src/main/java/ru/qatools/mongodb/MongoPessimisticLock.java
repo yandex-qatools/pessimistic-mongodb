@@ -12,7 +12,7 @@ import static java.util.UUID.randomUUID;
 /**
  * @author Ilya Sadykov
  */
-public class MongoPessimisticLock implements Lock {
+public class MongoPessimisticLock implements Lock, PessimisticLock {
     final PessimisticLocking lock;
     final String uuid;
 
@@ -24,10 +24,6 @@ public class MongoPessimisticLock implements Lock {
 
     public MongoPessimisticLock(PessimisticLocking lock) {
         this(lock, randomUUID().toString());
-    }
-
-    public boolean isLockedByCurrentThread(){
-        return lock.isLockedByMe(uuid);
     }
 
     @Override
@@ -58,6 +54,21 @@ public class MongoPessimisticLock implements Lock {
         } catch (LockWaitTimeoutException e) {
             return false;
         }
+    }
+
+    @Override
+    public void forceUnlock() {
+        lock.forceUnlock(uuid);
+    }
+
+    @Override
+    public boolean isLockedByMe() {
+        return lock.isLockedByMe(uuid);
+    }
+
+    @Override
+    public boolean isLocked() {
+        return lock.isLocked(uuid);
     }
 
     @Override

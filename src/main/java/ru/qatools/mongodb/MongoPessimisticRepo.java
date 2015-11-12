@@ -15,11 +15,11 @@ import ru.qatools.mongodb.util.ThreadUtil;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import static com.mongodb.client.model.Projections.include;
-import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 import static ru.qatools.mongodb.util.SerializeUtil.deserializeFromBytes;
@@ -94,9 +94,10 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
 
     @Override
     public Map<String, T> keyValueMap() {
-        return stream(collection().find().spliterator(), false).collect(
-                toMap(d -> d.get("_id").toString(), d -> getObject(d))
-        );
+        final Map<String, T> result = new HashMap<>();
+        stream(collection().find().spliterator(), false)
+                .forEach(d -> result.put(d.get("_id").toString(), getObject(d)));
+        return result;
     }
 
     @Override
@@ -120,7 +121,8 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
 
     private T getObject(Document doc) {
         try {
-            return (T) deserializeFromBytes(((Binary) doc.get("object")).getData());
+            final Object value = doc.get("object");
+            return (T) ((value != null) ? deserializeFromBytes(((Binary) value).getData()) : null);
         } catch (ClassNotFoundException | IOException e) {
             throw new InternalRepositoryException("Failed to deserialize object from bson! ", e);
         }
