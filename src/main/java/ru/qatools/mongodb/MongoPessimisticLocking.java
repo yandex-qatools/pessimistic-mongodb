@@ -50,7 +50,7 @@ public class MongoPessimisticLocking implements PessimisticLocking {
             String[] hostPort = host.split(HOST_PORT_SPLIT_PATTERN);
             addresses.add(new ServerAddress(hostPort[0], Integer.valueOf(hostPort[1])));
         }
-        mongo = ((!isEmpty(username) && !isEmpty(password))) ?
+        mongo = !isEmpty(username) && !isEmpty(password) ?
                 new MongoClient(addresses, singletonList(createCredential(username, dbName, password.toCharArray()))) :
                 new MongoClient(addresses);
         mongo.setWriteConcern(WriteConcern.valueOf(writeConcern));

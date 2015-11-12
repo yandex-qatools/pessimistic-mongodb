@@ -46,7 +46,7 @@ public abstract class SerializeUtil {
      * Deserialize the input bytes into object
      */
     public static <T extends Serializable> T deserializeFromBytes(byte[] input)
-            throws IOException, ClassNotFoundException {
+            throws Exception {
         return deserializeFromBytes(input, currentThread().getContextClassLoader());
     }
 
@@ -55,7 +55,7 @@ public abstract class SerializeUtil {
      */
     @SuppressWarnings("unchecked")
     public static <T extends Serializable> T deserializeFromBytes(byte[] input, ClassLoader classLoader)
-            throws IOException, ClassNotFoundException {
+            throws Exception {
         ByteArrayInputStream bis = new ByteArrayInputStream(input);
         return (T) new ClassLoaderObjectInputStream(classLoader, bis).readObject();
     }
