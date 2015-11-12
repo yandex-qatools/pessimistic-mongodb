@@ -48,4 +48,18 @@ public class MongoPessimisticLockTest extends MongoPessimisticLockingTest {
         t.join(2000);
         assertThat(currentTimeMillis() - startedTime, greaterThanOrEqualTo(2000L));
     }
+
+    @Test
+    public void testForceUnlock() throws Exception {
+        MongoPessimisticLock lock = new MongoPessimisticLock(createLocking());
+        lock.lock();
+        final Thread t = new Thread(() -> {
+            lock.forceUnlock();
+            lock.lock();
+        });
+        t.start();
+        t.join();
+        assertThat(lock.isLocked(), is(true));
+        assertThat(lock.isLockedByMe(), is(false));
+    }
 }
