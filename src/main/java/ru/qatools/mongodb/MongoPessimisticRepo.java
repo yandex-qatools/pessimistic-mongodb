@@ -71,10 +71,7 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
     @Override
     public T get(String key) {
         final FindIterable res = collection().find(byId(key)).limit(1);
-        if (!res.iterator().hasNext()) {
-            return null;
-        }
-        return getObject((Document) res.iterator().next());
+        return getObject((Document) res.iterator().tryNext());
     }
 
     @Override
@@ -121,6 +118,9 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
     @SuppressWarnings("unchecked")
     private T getObject(Document doc) {
         try {
+            if (doc == null) {
+                return null;
+            }
             final Object value = doc.get("object");
             return (T) ((value != null) ? deserializeFromBytes(((Binary) value).getData()) : null);
         } catch (Exception e) {
