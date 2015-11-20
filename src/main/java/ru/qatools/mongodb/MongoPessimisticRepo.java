@@ -11,9 +11,7 @@ import ru.qatools.mongodb.error.InternalRepositoryException;
 import ru.qatools.mongodb.error.InvalidLockOwnerException;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
 import ru.qatools.mongodb.util.SerializeUtil;
-import ru.qatools.mongodb.util.ThreadUtil;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +21,7 @@ import static com.mongodb.client.model.Projections.include;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
 import static ru.qatools.mongodb.util.SerializeUtil.deserializeFromBytes;
+import static ru.qatools.mongodb.util.ThreadUtil.threadId;
 
 /**
  * @author Ilya Sadykov
@@ -72,10 +71,7 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
     @Override
     public T get(String key) {
         final FindIterable res = collection().find(byId(key)).limit(1);
-        if (!res.iterator().hasNext()) {
-            return null;
-        }
-        return getObject((Document) res.iterator().next());
+        return getObject((Document) res.iterator().tryNext());
     }
 
     @Override
@@ -87,9 +83,9 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
 
     @Override
     public Set<T> valueSet() {
-        return stream(collection().find().projection(include("object")).spliterator(), false).map(
-                d -> getObject(d)
-        ).collect(toSet());
+        return stream(collection().find()
+                .projection(include("object")).spliterator(), false)
+                .map(this::getObject).collect(toSet());
     }
 
     @Override
@@ -107,7 +103,7 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
 
     private void ensureLockOwner(String key) {
         if (!lock.isLockedByMe(key)) {
-            throw new InvalidLockOwnerException("Key '" + key + "' is not locked by threadId '" + ThreadUtil.threadId() + "'!");
+            throw new InvalidLockOwnerException("Key '" + key + "' is not locked by threadId '" + threadId() + "'!");
         }
     }
 
@@ -119,11 +115,15 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
         return lock.db().getCollection(lock.keySpace + COLL_SUFFIX);
     }
 
+    @SuppressWarnings("unchecked")
     private T getObject(Document doc) {
         try {
+            if (doc == null) {
+                return null;
+            }
             final Object value = doc.get("object");
             return (T) ((value != null) ? deserializeFromBytes(((Binary) value).getData()) : null);
-        } catch (ClassNotFoundException | IOException e) {
+        } catch (Exception e) {
             throw new InternalRepositoryException("Failed to deserialize object from bson! ", e);
         }
     }
