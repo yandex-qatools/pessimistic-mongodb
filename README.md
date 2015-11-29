@@ -2,6 +2,7 @@
 
 Not a very new, and, probably completely useless approach to implement the distributed pessimistic locking on top of MongoDB.
 Allows to use MongoDB as a key-value storage with the ability to read-write using pessimistic locks.
+Additionally this library contains the simple queue implementation that uses tailing cursor.
 
 To use locking as a named locks (by key):
 ```java
@@ -18,7 +19,7 @@ To use locking as a named locks (by key):
 
 To use a pessimistic repository:
 ```java
-    final PessimisticRepository repo = new MongoPessimisticRepository( locking );
+    final PessimisticRepository<String> repo = new MongoPessimisticRepository<String>( locking );
     Object value = repo.tryLockAndGet("key", 3000); // locking the 'key'
     repo.putAndUnlock("key", "new value"); // releasing the 'key' and writing 'new value' to the repository
     repo.removeAndUnlock("key"); // removing key from the repository
@@ -31,3 +32,14 @@ To obtain a new unique lock (implementing java.util.concurrent.Lock):
   lock.unlock();
 ```
 
+To use the simple queue polling
+```java
+  final TailingQueue<String> queue = new MongoTailingQueue( 
+        mongoClient,        // instance of MongoClient
+        "databaseName",     // mongo db name
+        "collectionName",   // collection name to use (must be capped!)
+        10000               // max messages count within queue
+  );
+  new Thread(() -> queue.poll( m -> System.out.println(m))).start(); // launch polling thread
+  queue.add( "hello" ); // send some messages to the queue (will be displayed on console)
+```
