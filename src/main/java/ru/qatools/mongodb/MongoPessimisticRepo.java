@@ -5,12 +5,9 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
 import org.bson.Document;
-import org.bson.types.Binary;
 import ru.qatools.mongodb.error.ConcurrentReadWriteException;
-import ru.qatools.mongodb.error.InternalRepositoryException;
 import ru.qatools.mongodb.error.InvalidLockOwnerException;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
-import ru.qatools.mongodb.util.SerializeUtil;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -20,13 +17,13 @@ import java.util.Set;
 import static com.mongodb.client.model.Projections.include;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
-import static ru.qatools.mongodb.util.SerializeUtil.deserializeFromBytes;
+import static ru.qatools.mongodb.util.SerializeUtil.serializeToBytes;
 import static ru.qatools.mongodb.util.ThreadUtil.threadId;
 
 /**
  * @author Ilya Sadykov
  */
-public class MongoPessimisticRepo<T extends Serializable> implements PessimisticRepo<T> {
+public class MongoPessimisticRepo<T extends Serializable> implements MongoBasicStorage<T>, PessimisticRepo<T> {
 
     public static final String COLL_SUFFIX = "_repo";
     final MongoPessimisticLocking lock;
@@ -64,7 +61,7 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
     @Override
     public void put(String key, T object) {
         collection().updateOne(byId(key), new BasicDBObject("$set",
-                new BasicDBObject("object", SerializeUtil.serializeToBytes(object))), new UpdateOptions().upsert(true));
+                new BasicDBObject("object", serializeToBytes(object))), new UpdateOptions().upsert(true));
     }
 
     @SuppressWarnings("unchecked")
@@ -113,18 +110,5 @@ public class MongoPessimisticRepo<T extends Serializable> implements Pessimistic
 
     private MongoCollection<Document> collection() {
         return lock.db().getCollection(lock.keySpace + COLL_SUFFIX);
-    }
-
-    @SuppressWarnings("unchecked")
-    private T getObject(Document doc) {
-        try {
-            if (doc == null) {
-                return null;
-            }
-            final Object value = doc.get("object");
-            return (T) ((value != null) ? deserializeFromBytes(((Binary) value).getData()) : null);
-        } catch (Exception e) {
-            throw new InternalRepositoryException("Failed to deserialize object from bson! ", e);
-        }
     }
 }

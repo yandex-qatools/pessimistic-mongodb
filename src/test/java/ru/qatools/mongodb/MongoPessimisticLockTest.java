@@ -32,8 +32,8 @@ public class MongoPessimisticLockTest extends MongoPessimisticLockingTest {
         final Thread t = new Thread(lock::lock);
         t.start();
         final long startedTime = currentTimeMillis();
-        t.join(2000);
-        assertThat(currentTimeMillis() - startedTime, greaterThanOrEqualTo(2000L));
+        t.join(1000);
+        assertThat(currentTimeMillis() - startedTime, greaterThanOrEqualTo(1000L));
     }
 
     @Test
@@ -45,8 +45,8 @@ public class MongoPessimisticLockTest extends MongoPessimisticLockingTest {
         final Thread t = new Thread(lock2::lock);
         t.start();
         final long startedTime = currentTimeMillis();
-        t.join(2000);
-        assertThat(currentTimeMillis() - startedTime, greaterThanOrEqualTo(2000L));
+        t.join(1000);
+        assertThat(currentTimeMillis() - startedTime, greaterThanOrEqualTo(1000L));
     }
 
     @Test

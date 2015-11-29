@@ -3,7 +3,6 @@ package ru.qatools.mongodb;
 import org.junit.Test;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
 
-import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.stream.Collectors.toSet;
@@ -15,7 +14,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Ilya Sadykov
  */
-public class MongoPessimisticRepoTest extends MongoPessimisticLockingTest {
+public class MongoPessimisticRepoTest extends MongoBasicTest {
 
     @Test
     public void testRepoGetAndPut() throws Exception {
@@ -49,17 +48,6 @@ public class MongoPessimisticRepoTest extends MongoPessimisticLockingTest {
     }
 
     protected MongoPessimisticRepo<User> createRepo() {
-        return new MongoPessimisticRepo<User>(createLocking());
-    }
-
-    protected User user(String firstName) {
-        final User res = new User();
-        res.firstName = firstName;
-        return res;
-    }
-
-    static class User implements Serializable {
-        String firstName = "Ivan";
-        String lastName = "Ivanov";
+        return new MongoPessimisticRepo<>(createLocking());
     }
 }
