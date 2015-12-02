@@ -5,6 +5,18 @@ Not a very new, and, probably completely useless approach to implement the distr
 Allows to use MongoDB as a key-value storage with the ability to read-write using pessimistic locks.
 Additionally this library contains the simple queue implementation that uses tailing cursor.
 
+### Maven
+
+Add the following dependency to your pom.xml:
+```xml
+    <dependency>
+        <groupId>ru.qatools</groupId>
+        <artifactId>pessimistic-mongodb</artifactId>
+        <version>1.5</version>
+    </dependency>
+```
+
+### Usage
 To use locking as a named locks (by key):
 ```java
     final PessimisticLockng locking = new MongoPessimisticLocking(
