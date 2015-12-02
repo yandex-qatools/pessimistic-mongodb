@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Ilya Sadykov
  */
-public class MongoPessimisticLockTest extends MongoPessimisticLockingTest {
+public class MongoPessimisticLockTest extends MongoBasicTest {
 
     @Test
     public void testLock() throws Exception {

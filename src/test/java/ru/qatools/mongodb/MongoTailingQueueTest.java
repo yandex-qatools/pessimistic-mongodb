@@ -6,6 +6,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.UUID.randomUUID;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.stream.IntStream.rangeClosed;
 import static org.hamcrest.Matchers.contains;
@@ -17,14 +18,14 @@ import static ru.yandex.qatools.matchers.decorators.MatcherDecorators.timeoutHas
 /**
  * @author Ilya Sadykov
  */
-public class MongoTailingQueueTest extends MongoPessimisticLockingTest {
+public class MongoTailingQueueTest extends MongoBasicTest {
 
     private TailingQueue<User> queue;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        queue = new MongoTailingQueue<>(User.class, mongoClient, DB, "queue", 3);
+        queue = new MongoTailingQueue<>(User.class, mongoClient, DB, randomUUID().toString(), 3);
         queue.init();
     }
 
