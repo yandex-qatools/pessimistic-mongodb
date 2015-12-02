@@ -1,9 +1,11 @@
 package ru.qatools.mongodb;
 
+import com.mongodb.Block;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import ru.yandex.qatools.embed.service.MongoEmbeddedService;
 
 import java.io.Serializable;
@@ -11,6 +13,7 @@ import java.net.UnknownHostException;
 
 import static com.mongodb.MongoCredential.createCredential;
 import static de.flapdoodle.embed.mongo.distribution.Version.Main.PRODUCTION;
+import static java.lang.Runtime.getRuntime;
 import static java.util.Collections.singletonList;
 import static ru.qatools.mongodb.util.SocketUtil.findFreePort;
 
@@ -23,22 +26,34 @@ public class MongoBasicTest {
     public static final String USER = "user";
     public static final String PASS = "password";
     public static final int INIT_TIMEOUT = 10000;
-    protected MongoEmbeddedService mongo;
+    protected static MongoEmbeddedService mongo;
     protected MongoClient mongoClient;
+
+    @BeforeClass
+    public static synchronized void setUpClass() throws Exception {
+        if (mongo == null) {
+            mongo = new MongoEmbeddedService("localhost:" + findFreePort(),
+                    DB, USER, PASS, RS_NAME, null, true, INIT_TIMEOUT)
+                    .useVersion(PRODUCTION).useWiredTiger();
+            mongo.start();
+            getRuntime().addShutdownHook(
+                    new Thread(() -> mongo.stop())
+            );
+        }
+    }
 
     @Before
     public void setUp() throws Exception {
-        mongo = new MongoEmbeddedService("localhost:" + findFreePort(),
-                DB, USER, PASS, RS_NAME, null, true, INIT_TIMEOUT)
-                .useVersion(PRODUCTION).useWiredTiger();
-        mongo.start();
         mongoClient = new MongoClient(singletonList(new ServerAddress(mongo.getHost(), mongo.getPort())),
                 singletonList(createCredential(USER, DB, PASS.toCharArray())));
     }
 
     @After
     public void tearDown() throws Exception {
-        mongo.stop();
+        mongoClient.getDatabase(DB).listCollectionNames().forEach(
+                (Block<? super String>) c -> mongoClient.getDatabase(DB).getCollection(c).drop()
+        );
+        mongoClient.close();
     }
 
     protected MongoPessimisticLocking createLocking() {
