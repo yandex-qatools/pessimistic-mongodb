@@ -1,4 +1,5 @@
 # Pessimistic MongoDB
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/ru.qatools/pessimistic-mongodb/badge.svg?style=flat)](https://maven-badges.herokuapp.com/maven-central/ru.qatools/pessimistic-mongodb) 
 [![Build status](http://ci.qatools.ru/job/pessimistic-mongodb_pull-request/badge/icon)](http://ci.qatools.ru/job/pessimistic-mongodb_pull-request/) [![covarage](https://img.shields.io/sonar/http/sonar.qatools.ru/ru.qatools:pessimistic-mongodb/coverage.svg?style=flat)](http://sonar.qatools.ru/dashboard/index/2302)
 
 Not a very new, and, probably completely useless approach to implement the distributed pessimistic locking on top of MongoDB.
