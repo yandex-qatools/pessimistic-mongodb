@@ -4,25 +4,15 @@ import org.apache.commons.io.input.ClassLoaderObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-
-import static java.lang.Thread.currentThread;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 public abstract class SerializeUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(SerializeUtil.class);
 
     SerializeUtil() {
-    }
-
-    /**
-     * Serialize the object to bytes
-     */
-    public static byte[] serializeToBytes(Object object) {
-        if (object == null) {
-            return null; //NOSONAR
-        }
-        return serializeToBytes(object, (object.getClass().getClassLoader() != null) ?
-                object.getClass().getClassLoader() : currentThread().getContextClassLoader());
     }
 
     /**
@@ -40,14 +30,6 @@ public abstract class SerializeUtil {
             LOGGER.error("Failed to serialize object to bytes", e);
             return null; //NOSONAR
         }
-    }
-
-    /**
-     * Deserialize the input bytes into object
-     */
-    public static <T extends Serializable> T deserializeFromBytes(byte[] input)
-            throws Exception {  //NOSONAR
-        return deserializeFromBytes(input, currentThread().getContextClassLoader());
     }
 
     /**
