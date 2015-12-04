@@ -15,17 +15,17 @@ import java.util.function.Consumer;
 import static com.mongodb.CursorType.TailableAwait;
 import static java.lang.Thread.sleep;
 import static java.util.stream.StreamSupport.stream;
-import static ru.qatools.mongodb.util.SerializeUtil.serializeToBytes;
 
 /**
  * @author Ilya Sadykov
  */
-public class MongoTailingQueue<T extends Serializable> implements TailingQueue<T>, MongoBasicStorage<T> {
+public class MongoTailingQueue<T extends Serializable> extends MongoAbstractStorage<T>
+        implements TailingQueue<T> {
     public static final long DEFAULT_MAX_SIZE = 1000L;
     public static final long ASSUMED_MAX_DOC_SIZE = 1024L * 1024L; // 1mb
     public static final int BATCH_SIZE = 100;
-    private static final Logger LOGGER = LoggerFactory.getLogger(MongoTailingQueue.class);
     public static final int SLEEP_BETWEEN_FAILURES_MS = 500;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoTailingQueue.class);
     final Class<T> entityClass;
     final MongoClient mongo;
     final String dbName;
@@ -78,7 +78,7 @@ public class MongoTailingQueue<T extends Serializable> implements TailingQueue<T
                         .cursorType(TailableAwait)
                         .noCursorTimeout(true)
                         .batchSize(BATCH_SIZE).spliterator(), false)
-                        .forEach(doc -> consumer.accept(getObject(doc)));
+                        .forEach(doc -> consumer.accept(getObject(doc, deserializer)));
             } catch (MongoException e) {
                 LOGGER.debug("Failed to iterate on queue cursor for {}.{}", dbName, queueName, e);
                 try {
@@ -92,7 +92,7 @@ public class MongoTailingQueue<T extends Serializable> implements TailingQueue<T
 
     @Override
     public void add(T object) {
-        collection().insertOne(new Document("object", serializeToBytes(object)));
+        collection().insertOne(new Document("object", serializer.toBytes(object)));
     }
 
     @Override

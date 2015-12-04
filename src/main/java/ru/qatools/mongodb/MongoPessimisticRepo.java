@@ -17,13 +17,13 @@ import java.util.Set;
 import static com.mongodb.client.model.Projections.include;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.StreamSupport.stream;
-import static ru.qatools.mongodb.util.SerializeUtil.serializeToBytes;
 import static ru.qatools.mongodb.util.ThreadUtil.threadId;
 
 /**
  * @author Ilya Sadykov
  */
-public class MongoPessimisticRepo<T extends Serializable> implements MongoBasicStorage<T>, PessimisticRepo<T> {
+public class MongoPessimisticRepo<T extends Serializable>
+    extends MongoAbstractStorage<T> implements PessimisticRepo<T> {
 
     public static final String COLL_SUFFIX = "_repo";
     final MongoPessimisticLocking lock;
@@ -61,14 +61,14 @@ public class MongoPessimisticRepo<T extends Serializable> implements MongoBasicS
     @Override
     public void put(String key, T object) {
         collection().updateOne(byId(key), new BasicDBObject("$set",
-                new BasicDBObject("object", serializeToBytes(object))), new UpdateOptions().upsert(true));
+                new BasicDBObject("object", serializer.toBytes(object))), new UpdateOptions().upsert(true));
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public T get(String key) {
         final FindIterable res = collection().find(byId(key)).limit(1);
-        return getObject((Document) res.iterator().tryNext());
+        return getObject((Document) res.iterator().tryNext(), deserializer);
     }
 
     @Override
@@ -82,14 +82,14 @@ public class MongoPessimisticRepo<T extends Serializable> implements MongoBasicS
     public Set<T> valueSet() {
         return stream(collection().find()
                 .projection(include("object")).spliterator(), false)
-                .map(this::getObject).collect(toSet());
+                .map(d -> getObject(d, deserializer)).collect(toSet());
     }
 
     @Override
     public Map<String, T> keyValueMap() {
         final Map<String, T> result = new HashMap<>();
         stream(collection().find().spliterator(), false)
-                .forEach(d -> result.put(d.get("_id").toString(), getObject(d)));
+                .forEach(d -> result.put(d.get("_id").toString(), getObject(d, deserializer)));
         return result;
     }
 
