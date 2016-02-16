@@ -33,8 +33,8 @@ To use locking as a named locks (by key):
 
 To use a pessimistic repository:
 ```java
-    final PessimisticRepository<String> repo = new MongoPessimisticRepository<String>( locking );
-    Object value = repo.tryLockAndGet("key", 3000); // locking the 'key'
+    final PessimisticRepository<String> repo = new MongoPessimisticRepository<String>( locking, String.class );
+    String value = repo.tryLockAndGet("key", 3000); // locking the 'key'
     repo.putAndUnlock("key", "new value"); // releasing the 'key' and writing 'new value' to the repository
     repo.removeAndUnlock("key"); // removing key from the repository
 ```
