@@ -7,9 +7,7 @@ import ru.qatools.mongodb.util.JsonSerializer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -68,9 +66,20 @@ public class MongoPessimisticRepoTest extends MongoBasicTest {
         thread.start();
         thread.join();
         assertThat(exceptionRaised.get(), is(true));
+        user.address = new User.Address();
+        user.address.location = "St.Petersburg";
+        final Thread thread2 = new Thread(() -> {
+            final User u = repo.tryLockAndGet("vasya", 5000L);
+            u.firstName = "Vasiliy";
+            repo.putAndUnlock("vasya", u);
+        });
+        thread2.start();
+        Thread.sleep(200L);
         user.lastName = "Vasilyev";
         repo.putAndUnlock("vasya", user);
+        thread2.join();
         assertThat(repo.get("vasya").lastName, is("Vasilyev"));
+        assertThat(repo.get("vasya").firstName, is("Vasiliy"));
         assertThat(repo.keyValueMap().keySet(), hasItems("vasya", "petya"));
     }
 

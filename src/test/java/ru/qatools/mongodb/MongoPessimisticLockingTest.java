@@ -45,7 +45,7 @@ public class MongoPessimisticLockingTest extends MongoBasicTest {
             waitedMs.set(currentTimeMillis() - startedWaitTime);
         });
         otherThread.start();
-        sleep(1000L);
+        sleep(1100L);
         lock.unlock("key1");
         otherThread.join();
         assertThat(waitedMs.get(), allOf(greaterThan(1000L), lessThan(2000L)));
@@ -64,7 +64,6 @@ public class MongoPessimisticLockingTest extends MongoBasicTest {
         forceLockInSeparateThread("key1");
         lock.unlock("key1");
     }
-
 
     @Test
     public void testLockingTwiceByCurrentThreadIsAllowed() throws Exception {
