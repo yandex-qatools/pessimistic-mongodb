@@ -1,9 +1,6 @@
 package ru.qatools.mongodb;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.ServerAddress;
-import com.mongodb.WriteConcern;
+import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
@@ -66,11 +63,7 @@ public class MongoPessimisticLocking implements PessimisticLocking {
         if (isLockedByMe(key)) {
             return;
         }
-        while (collection().updateOne(
-                byId(key),
-                new BasicDBObject("$setOnInsert",
-                        new BasicDBObject("threadId", threadId()).append("lockedSince", currentTimeMillis())),
-                new UpdateOptions().upsert(true)).getUpsertedId() == null) {
+        while (!tryLockUpsertion(key)) {
             LOGGER.trace("Still waiting for the lock of the key '{}' for threadId '{}' ({} of {})... ",
                     key, threadId(), currentTimeMillis() - waitStartedTime, timeoutMs);
             try {
@@ -82,7 +75,7 @@ public class MongoPessimisticLocking implements PessimisticLocking {
                 throw new LockWaitTimeoutException("Lock wait timed out for key '" + key + "'!");
             }
         }
-        LOGGER.trace("Lock aquired successfully for key '{}' for threadId '{}'...", key, threadId());
+        LOGGER.trace("Locked successfully for key '{}' for threadId '{}'...", key, threadId());
     }
 
     @Override
@@ -92,7 +85,7 @@ public class MongoPessimisticLocking implements PessimisticLocking {
             throw new InvalidLockOwnerException("Current thread '" + threadId() + "' is not the owner of the lock " +
                     "for key '" + key + "'!");
         }
-        LOGGER.trace("Unlocking key '{}' is successfull for threadId '{}'...", key, threadId());
+        LOGGER.trace("Unlocked successfully for key '{}' for threadId '{}'...", key, threadId());
     }
 
     @Override
@@ -119,6 +112,21 @@ public class MongoPessimisticLocking implements PessimisticLocking {
         return new BasicDBObject()
                 .append("_id", key)
                 .append("threadId", threadId());
+    }
+
+    private boolean tryLockUpsertion(String key) {
+        try {
+            return collection().updateOne(
+                    byId(key),
+                    new BasicDBObject("$setOnInsert",
+                            new BasicDBObject("threadId", threadId())
+                                    .append("_id", key)
+                                    .append("lockedSince", currentTimeMillis())),
+                    new UpdateOptions().upsert(true)).getUpsertedId() != null;
+        } catch (MongoWriteException e) {
+            LOGGER.trace("Failed to upsert lock value into {} for {}", keySpace + COLL_SUFFIX, threadId(), e);
+            return false;
+        }
     }
 
     MongoCollection collection() {

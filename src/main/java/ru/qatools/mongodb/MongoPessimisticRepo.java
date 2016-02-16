@@ -5,6 +5,8 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.qatools.mongodb.error.ConcurrentReadWriteException;
 import ru.qatools.mongodb.error.InvalidLockOwnerException;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
@@ -23,8 +25,8 @@ import static ru.qatools.mongodb.util.ThreadUtil.threadId;
  */
 public class MongoPessimisticRepo<T>
         extends MongoAbstractStorage<T> implements PessimisticRepo<T> {
-
     public static final String COLL_SUFFIX = "_repo";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoPessimisticRepo.class);
     final MongoPessimisticLocking lock;
 
     public MongoPessimisticRepo(MongoPessimisticLocking lock, Class<T> entityClass) {
@@ -34,12 +36,14 @@ public class MongoPessimisticRepo<T>
 
     @Override
     public T tryLockAndGet(String key, long timeoutMs) throws LockWaitTimeoutException, ConcurrentReadWriteException {
+        LOGGER.trace("Trying lock and get key {} by thread {}", key, threadId());
         lock.tryLock(key, timeoutMs);
         return get(key);
     }
 
     @Override
     public void putAndUnlock(String key, T object) throws ConcurrentReadWriteException {
+        LOGGER.trace("Putting new value and unlocking key {} by thread {}", key, threadId());
         ensureLockOwner(key);
         put(key, object);
         lock.unlock(key);
@@ -48,6 +52,7 @@ public class MongoPessimisticRepo<T>
 
     @Override
     public void removeAndUnlock(String key) throws InvalidLockOwnerException {
+        LOGGER.trace("Removing value and unlocking key {} by thread {}", key, threadId());
         ensureLockOwner(key);
         remove(key);
         lock.unlock(key);
@@ -55,6 +60,7 @@ public class MongoPessimisticRepo<T>
 
     @Override
     public void remove(String key) {
+        LOGGER.trace("Removing value without unlocking key {} by thread {}", key, threadId());
         collection().deleteOne(byId(key));
     }
 

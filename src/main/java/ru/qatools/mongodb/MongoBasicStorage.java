@@ -14,7 +14,7 @@ public interface MongoBasicStorage<T> {
             if (doc == null) {
                 return null;
             }
-            return (T) getDeserializer().fromDBObject(doc, expectedClass);
+            return getDeserializer().fromDBObject(doc, expectedClass);
         } catch (Exception e) {
             throw new InternalRepositoryException("Failed to deserialize object from bson! ", e);
         }
