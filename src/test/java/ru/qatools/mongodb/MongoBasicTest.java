@@ -8,7 +8,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import ru.yandex.qatools.embed.service.MongoEmbeddedService;
 
-import java.io.Serializable;
 import java.net.UnknownHostException;
 
 import static com.mongodb.MongoCredential.createCredential;
@@ -80,10 +79,5 @@ public class MongoBasicTest {
         final User res = new User();
         res.firstName = firstName;
         return res;
-    }
-
-    static class User implements Serializable {
-        String firstName = "Ivan";
-        String lastName = "Ivanov";
     }
 }

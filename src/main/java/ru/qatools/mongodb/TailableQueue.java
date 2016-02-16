@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 /**
  * @author Ilya Sadykov
  */
-public interface TailingQueue<T> {
+public interface TailableQueue<T> {
     /**
      * Initialize the queue
      */

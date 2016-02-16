@@ -18,14 +18,14 @@ import static ru.yandex.qatools.matchers.decorators.MatcherDecorators.timeoutHas
 /**
  * @author Ilya Sadykov
  */
-public class MongoTailingQueueTest extends MongoBasicTest {
+public class MongoTailableQueueTest extends MongoBasicTest {
 
-    private TailingQueue<User> queue;
+    private TailableQueue<User> queue;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        queue = new MongoTailingQueue<>(User.class, mongoClient, DB, randomUUID().toString(), 3);
+        queue = new MongoTailableQueue<>(User.class, mongoClient, DB, randomUUID().toString(), 3);
         queue.init();
     }
 

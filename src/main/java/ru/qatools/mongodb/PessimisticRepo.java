@@ -4,14 +4,13 @@ import ru.qatools.mongodb.error.ConcurrentReadWriteException;
 import ru.qatools.mongodb.error.InvalidLockOwnerException;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * @author Ilya Sadykov
  */
-public interface PessimisticRepo<T extends Serializable> {
+public interface PessimisticRepo<T> {
     /**
      * Get and lock
      */

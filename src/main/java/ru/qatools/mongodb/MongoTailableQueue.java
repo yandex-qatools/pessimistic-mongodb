@@ -9,7 +9,6 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.function.Consumer;
 
 import static com.mongodb.CursorType.TailableAwait;
@@ -19,26 +18,25 @@ import static java.util.stream.StreamSupport.stream;
 /**
  * @author Ilya Sadykov
  */
-public class MongoTailingQueue<T extends Serializable> extends MongoAbstractStorage<T>
-        implements TailingQueue<T> {
+public class MongoTailableQueue<T> extends MongoAbstractStorage<T>
+        implements TailableQueue<T> {
     public static final long DEFAULT_MAX_SIZE = 1000L;
     public static final long ASSUMED_MAX_DOC_SIZE = 1024L * 1024L; // 1mb
     public static final int BATCH_SIZE = 100;
     public static final int SLEEP_BETWEEN_FAILURES_MS = 500;
-    private static final Logger LOGGER = LoggerFactory.getLogger(MongoTailingQueue.class);
-    final Class<T> entityClass;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoTailableQueue.class);
     final MongoClient mongo;
     final String dbName;
     final String queueName;
     final long maxSize;
     volatile boolean stopped = false;
 
-    public MongoTailingQueue(Class<T> entityClass, MongoClient mongo, String dbName, String queueName) {
+    public MongoTailableQueue(Class<T> entityClass, MongoClient mongo, String dbName, String queueName) {
         this(entityClass, mongo, dbName, queueName, DEFAULT_MAX_SIZE);
     }
 
-    public MongoTailingQueue(Class<T> entityClass, MongoClient mongo, String dbName, String queueName, long maxSize) {
-        this.entityClass = entityClass;
+    public MongoTailableQueue(Class<T> entityClass, MongoClient mongo, String dbName, String queueName, long maxSize) {
+        super(entityClass);
         this.mongo = mongo;
         this.dbName = dbName;
         this.queueName = queueName;
@@ -78,7 +76,7 @@ public class MongoTailingQueue<T extends Serializable> extends MongoAbstractStor
                         .cursorType(TailableAwait)
                         .noCursorTimeout(true)
                         .batchSize(BATCH_SIZE).spliterator(), false)
-                        .forEach(doc -> consumer.accept(getObject(doc, deserializer)));
+                        .forEach(doc -> consumer.accept(getObject(doc, entityClass)));
             } catch (MongoException e) {
                 LOGGER.debug("Failed to iterate on queue cursor for {}.{}", dbName, queueName, e);
                 try {
@@ -92,7 +90,7 @@ public class MongoTailingQueue<T extends Serializable> extends MongoAbstractStor
 
     @Override
     public void add(T object) {
-        collection().insertOne(new Document("object", serializer.toBytes(object)));
+        collection().insertOne(Document.parse(serializer.toDBObject(object).toJson()));
     }
 
     @Override

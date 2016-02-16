@@ -9,7 +9,6 @@ import ru.qatools.mongodb.error.ConcurrentReadWriteException;
 import ru.qatools.mongodb.error.InvalidLockOwnerException;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -22,13 +21,14 @@ import static ru.qatools.mongodb.util.ThreadUtil.threadId;
 /**
  * @author Ilya Sadykov
  */
-public class MongoPessimisticRepo<T extends Serializable>
-    extends MongoAbstractStorage<T> implements PessimisticRepo<T> {
+public class MongoPessimisticRepo<T>
+        extends MongoAbstractStorage<T> implements PessimisticRepo<T> {
 
     public static final String COLL_SUFFIX = "_repo";
     final MongoPessimisticLocking lock;
 
-    public MongoPessimisticRepo(MongoPessimisticLocking lock) {
+    public MongoPessimisticRepo(MongoPessimisticLocking lock, Class<T> entityClass) {
+        super(entityClass);
         this.lock = lock;
     }
 
@@ -60,15 +60,16 @@ public class MongoPessimisticRepo<T extends Serializable>
 
     @Override
     public void put(String key, T object) {
-        collection().updateOne(byId(key), new BasicDBObject("$set",
-                new BasicDBObject("object", serializer.toBytes(object))), new UpdateOptions().upsert(true));
+        collection().updateOne(byId(key),
+                new Document("$set", serializer.toDBObject(object)),
+                new UpdateOptions().upsert(true));
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public T get(String key) {
         final FindIterable res = collection().find(byId(key)).limit(1);
-        return getObject((Document) res.iterator().tryNext(), deserializer);
+        return getObject((Document) res.iterator().tryNext(), entityClass);
     }
 
     @Override
@@ -80,16 +81,15 @@ public class MongoPessimisticRepo<T extends Serializable>
 
     @Override
     public Set<T> valueSet() {
-        return stream(collection().find()
-                .projection(include("object")).spliterator(), false)
-                .map(d -> getObject(d, deserializer)).collect(toSet());
+        return stream(collection().find().spliterator(), false)
+                .map(d -> getObject(d, entityClass)).collect(toSet());
     }
 
     @Override
     public Map<String, T> keyValueMap() {
         final Map<String, T> result = new HashMap<>();
         stream(collection().find().spliterator(), false)
-                .forEach(d -> result.put(d.get("_id").toString(), getObject(d, deserializer)));
+                .forEach(d -> result.put(d.get("_id").toString(), getObject(d, entityClass)));
         return result;
     }
 
