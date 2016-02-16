@@ -2,11 +2,13 @@ package ru.qatools.mongodb;
 
 import org.junit.Test;
 import ru.qatools.mongodb.error.LockWaitTimeoutException;
+import ru.qatools.mongodb.util.JsonSerializer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -49,8 +51,27 @@ public class MongoPessimisticRepoTest extends MongoBasicTest {
 
     @Test
     public void testRepoWithCustomSerializer() throws Exception {
-        final PessimisticRepo<User> repo = createRepo();
-
+        final MongoPessimisticRepo<User> repo = createRepo();
+        repo.setSerializer(new JsonSerializer());
+        repo.setDeserializer(new JsonSerializer());
+        repo.put("vasya", user("Vasya"));
+        repo.put("petya", user("Petya"));
+        final User user = repo.tryLockAndGet("vasya", 100);
+        final AtomicBoolean exceptionRaised = new AtomicBoolean();
+        final Thread thread = new Thread(() -> {
+            try {
+                repo.tryLockAndGet("vasya", 500L);
+            } catch (LockWaitTimeoutException e) {
+                exceptionRaised.set(true);
+            }
+        });
+        thread.start();
+        thread.join();
+        assertThat(exceptionRaised.get(), is(true));
+        user.lastName = "Vasilyev";
+        repo.putAndUnlock("vasya", user);
+        assertThat(repo.get("vasya").lastName, is("Vasilyev"));
+        assertThat(repo.keyValueMap().keySet(), hasItems("vasya", "petya"));
     }
 
     protected MongoPessimisticRepo<User> createRepo() {
