@@ -47,7 +47,13 @@ public class MongoPessimisticRepoTest extends MongoBasicTest {
         assertThat(createRepo().get("somekey"), nullValue());
     }
 
+    @Test
+    public void testRepoWithCustomSerializer() throws Exception {
+        final PessimisticRepo<User> repo = createRepo();
+
+    }
+
     protected MongoPessimisticRepo<User> createRepo() {
-        return new MongoPessimisticRepo<>(createLocking());
+        return new MongoPessimisticRepo<>(createLocking(), User.class);
     }
 }

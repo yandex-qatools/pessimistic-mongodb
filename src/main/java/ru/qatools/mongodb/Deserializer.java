@@ -1,22 +1,14 @@
 package ru.qatools.mongodb;
 
-import java.io.Serializable;
-
-import static java.lang.Thread.currentThread;
+import org.bson.Document;
 
 /**
  * @author Ilya Sadykov
  */
 public interface Deserializer {
-    /**
-     * Deserialize the input bytes into object
-     */
-    default <T extends Serializable> T fromBytes(byte[] input) throws Exception {  //NOSONAR
-        return fromBytes(input, currentThread().getContextClassLoader());
-    }
 
     /**
-     * Deserialize the input bytes into object
+     * Deserialize the input document into object
      */
-    <T extends Serializable> T fromBytes(byte[] input, ClassLoader classLoader) throws Exception; //NOSONAR
+    <T> T fromDBObject(Document input, Class<T> expectedClass) throws Exception; //NOSONAR
 }

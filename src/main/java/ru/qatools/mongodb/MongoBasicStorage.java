@@ -1,26 +1,26 @@
 package ru.qatools.mongodb;
 
 import org.bson.Document;
-import org.bson.types.Binary;
 import ru.qatools.mongodb.error.InternalRepositoryException;
-
-import java.io.Serializable;
 
 /**
  * @author Ilya Sadykov
  */
-public interface MongoBasicStorage<T extends Serializable> {
+public interface MongoBasicStorage<T> {
 
     @SuppressWarnings("unchecked")
-    default T getObject(Document doc, Deserializer deserializer) {
+    default T getObject(Document doc, Class<T> expectedClass) {
         try {
             if (doc == null) {
                 return null;
             }
-            final Object value = doc.get("object");
-            return (T) ((value != null) ? deserializer.fromBytes(((Binary) value).getData()) : null);
+            return (T) getDeserializer().fromDBObject(doc, expectedClass);
         } catch (Exception e) {
             throw new InternalRepositoryException("Failed to deserialize object from bson! ", e);
         }
     }
+
+    Serializer getSerializer();
+
+    Deserializer getDeserializer();
 }

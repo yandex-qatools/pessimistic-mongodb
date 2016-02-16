@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
-import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
@@ -48,7 +48,7 @@ public class MongoPessimisticLockingTest extends MongoBasicTest {
         sleep(1000L);
         lock.unlock("key1");
         otherThread.join();
-        assertThat(waitedMs.get(), anyOf(greaterThan(1000L), lessThan(2000L)));
+        assertThat(waitedMs.get(), allOf(greaterThan(1000L), lessThan(2000L)));
     }
 
     @Test(expected = LockWaitTimeoutException.class)
