@@ -24,6 +24,7 @@ public class MongoTailableQueue<T> extends MongoAbstractStorage<T>
     public static final long ASSUMED_MAX_DOC_SIZE = 1024L * 1024L; // 1mb
     public static final int BATCH_SIZE = 100;
     public static final int SLEEP_BETWEEN_FAILURES_MS = 500;
+    public static final int MIN_POLL_INTERVAL_MS = 100;
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoTailableQueue.class);
     final MongoClient mongo;
     final String dbName;
@@ -77,6 +78,12 @@ public class MongoTailableQueue<T> extends MongoAbstractStorage<T>
                         .noCursorTimeout(true)
                         .batchSize(BATCH_SIZE).spliterator(), false)
                         .forEach(doc -> consumer.accept(getObject(doc, entityClass)));
+                try {
+                    LOGGER.debug("Tailable cursor returned no value without await for {}.{}", dbName, queueName);
+                    sleep(MIN_POLL_INTERVAL_MS);
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Poll sleeping after cursor returns was interrupted", e);
+                }
             } catch (MongoException e) {
                 LOGGER.debug("Failed to iterate on queue cursor for {}.{}", dbName, queueName, e);
                 try {
