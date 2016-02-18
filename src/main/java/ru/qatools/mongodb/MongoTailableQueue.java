@@ -31,6 +31,8 @@ public class MongoTailableQueue<T> extends MongoAbstractStorage<T>
     final String queueName;
     final long maxSize;
     volatile boolean stopped = false;
+    private int minPollIntervalMs = MIN_POLL_INTERVAL_MS;
+    private int sleepBetweenFailuresMs = SLEEP_BETWEEN_FAILURES_MS;
 
     public MongoTailableQueue(Class<T> entityClass, MongoClient mongo, String dbName, String queueName) {
         this(entityClass, mongo, dbName, queueName, DEFAULT_MAX_SIZE);
@@ -80,14 +82,14 @@ public class MongoTailableQueue<T> extends MongoAbstractStorage<T>
                         .forEach(doc -> consumer.accept(getObject(doc, entityClass)));
                 try {
                     LOGGER.debug("Tailable cursor returned no value without await for {}.{}", dbName, queueName);
-                    sleep(MIN_POLL_INTERVAL_MS);
+                    sleep(minPollIntervalMs);
                 } catch (InterruptedException e) {
                     LOGGER.warn("Poll sleeping after cursor returns was interrupted", e);
                 }
             } catch (MongoException e) {
                 LOGGER.debug("Failed to iterate on queue cursor for {}.{}", dbName, queueName, e);
                 try {
-                    sleep(SLEEP_BETWEEN_FAILURES_MS);
+                    sleep(sleepBetweenFailuresMs);
                 } catch (InterruptedException e1) {
                     LOGGER.warn("Poll sleeping after cursor failure was interrupted", e);
                 }
@@ -103,6 +105,14 @@ public class MongoTailableQueue<T> extends MongoAbstractStorage<T>
     @Override
     public long size() {
         return collection().count();
+    }
+
+    public void setMinPollIntervalMs(int minPollIntervalMs) {
+        this.minPollIntervalMs = minPollIntervalMs;
+    }
+
+    public void setSleepBetweenFailuresMs(int sleepBetweenFailuresMs) {
+        this.sleepBetweenFailuresMs = sleepBetweenFailuresMs;
     }
 
     private MongoCollection<Document> collection() {
