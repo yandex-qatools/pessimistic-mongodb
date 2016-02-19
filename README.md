@@ -13,7 +13,7 @@ Add the following dependency to your pom.xml:
     <dependency>
         <groupId>ru.qatools</groupId>
         <artifactId>pessimistic-mongodb</artifactId>
-        <version>1.5</version>
+        <version>1.9</version>
     </dependency>
 ```
 
