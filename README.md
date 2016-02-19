@@ -48,7 +48,7 @@ To obtain a new unique lock (implementing java.util.concurrent.Lock):
 
 To use the simple queue polling
 ```java
-  final TailingQueue<String> queue = new MongoTailingQueue( 
+  final TailableQueue<String> queue = new MongoTailableQueue( 
         mongoClient,        // instance of MongoClient
         "databaseName",     // mongo db name
         "collectionName",   // collection name to use (must be capped!)
